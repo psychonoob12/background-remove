@@ -1,0 +1,7 @@
+flask
+rembg
+pillow
+<<<<<<< HEAD
+onnxruntime
+=======
+>>>>>>> 96a5f9bab14c267447324c7fbeb94ad30cfdb843
