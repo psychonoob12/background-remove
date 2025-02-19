@@ -1,6 +1,5 @@
 from flask import Flask, request, send_file
 from rembg import remove
-from PIL import Image
 import os
 
 app = Flask(__name__)
@@ -28,4 +27,4 @@ def remove_bg():
     return send_file(output_path, mimetype='image/png')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=10000)
