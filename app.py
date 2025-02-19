@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file
+﻿from flask import Flask, request, send_file
 from rembg import remove
 import os
 
@@ -27,4 +27,5 @@ def remove_bg():
     return send_file(output_path, mimetype='image/png')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    port = int(os.environ.get("PORT", 10000))  # Utilise le port spécifié par Render, ou 10000 par défaut
+    app.run(host='0.0.0.0', port=port)
