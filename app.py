@@ -1,31 +1,31 @@
-﻿from flask import Flask, request, send_file
+﻿from flask import Flask, request, jsonify, send_file
 from rembg import remove
-import os
+from PIL import Image
+import io
 
 app = Flask(__name__)
 
 @app.route('/remove-bg', methods=['POST'])
 def remove_bg():
+    # Vérifier si un fichier est présent dans la requête
     if 'file' not in request.files:
-        return "Aucun fichier téléchargé", 400
+        return jsonify({"error": "Aucun fichier trouvé"}), 400
 
     file = request.files['file']
-    input_path = "input_image.png"
-    output_path = "output_image.png"
 
-    # Sauvegarder l'image téléchargée
-    file.save(input_path)
+    # Lire l'image
+    input_image = Image.open(file.stream)
 
     # Supprimer l'arrière-plan
-    with open(input_path, 'rb') as i:
-        with open(output_path, 'wb') as o:
-            input = i.read()
-            output = remove(input)
-            o.write(output)
+    output_image = remove(input_image)
+
+    # Convertir l'image en bytes
+    img_byte_arr = io.BytesIO()
+    output_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
 
     # Renvoyer l'image sans arrière-plan
-    return send_file(output_path, mimetype='image/png')
+    return send_file(img_byte_arr, mimetype='image/png')
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))  # Utilise le port spécifié par Render, ou 10000 par défaut
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
