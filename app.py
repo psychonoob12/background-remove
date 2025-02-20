@@ -1,37 +1,48 @@
 ﻿from flask import Flask, request, send_file
 from rembg import remove
-import os
-import logging
+from PIL import Image
+import io
 
 app = Flask(__name__)
 
-# Configurer les logs
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Définit la taille maximale du fichier à 5MB (5 * 1024 * 1024 octets)
+MAX_FILE_SIZE = 5 * 1024 * 1024
 
+# Route principale qui affiche un message de bienvenue
+@app.route('/')
+def index():
+    return "Welcome to the Background Removal API! Use /remove-bg to upload an image."
+
+# Route pour uploader et traiter l'image
 @app.route('/remove-bg', methods=['POST'])
-def remove_bg():
-    if 'file' not in request.files:
-        return "Aucun fichier téléchargé", 400
+def remove_background():
+    # Vérifie si une image a été uploadée
+    if 'image' not in request.files:
+        return "No image uploaded.", 400
+    
+    file = request.files['image']
+    
+    # Vérifie la taille du fichier
+    file.seek(0, io.SEEK_END)
+    file_size = file.tell()
+    if file_size > MAX_FILE_SIZE:
+        return f"File too large. Maximum size allowed is {MAX_FILE_SIZE / (1024 * 1024)}MB.", 413
+    
+    # Remet le curseur au début du fichier et ouvre l'image
+    file.seek(0)
+    input_image = Image.open(file.stream).convert("RGBA")
+    
+    # Supprime l'arrière-plan avec rembg
+    output_image = remove(input_image)
+    
+    # Sauvegarde l'image en mémoire (pas sur disque)
+    img_io = io.BytesIO()
+    output_image.save(img_io, 'PNG')
+    img_io.seek(0)
+    
+    # Envoie l'image traitée au client
+    return send_file(img_io, mimetype='image/png', as_attachment=True, download_name='image_without_background.png')
 
-    file = request.files['file']
-    input_path = "input_image.png"
-    output_path = "output_image.png"
-
-    file.save(input_path)
-    with open(input_path, 'rb') as i:
-        with open(output_path, 'wb') as o:
-            input = i.read()
-            output = remove(input)
-            o.write(output)
-
-    return send_file(output_path, mimetype='image/png')
-
+# Démarre l'application en mode debug si exécutée directement
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    logger.info(f"Démarrage de l'application sur le port {port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
-else:
-    # Quand Gunicorn est utilisé, loguer le port
-    port = int(os.environ.get('PORT', 5000))
-    logger.info(f"Gunicorn démarré, écoute sur 0.0.0.0:{port}")
+    app.run(debug=True)
