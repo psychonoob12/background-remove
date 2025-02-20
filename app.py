@@ -1,8 +1,13 @@
 ﻿from flask import Flask, request, send_file
 from rembg import remove
 import os
+import logging
 
 app = Flask(__name__)
+
+# Configurer les logs
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.route('/remove-bg', methods=['POST'])
 def remove_bg():
@@ -13,20 +18,20 @@ def remove_bg():
     input_path = "input_image.png"
     output_path = "output_image.png"
 
-    # Sauvegarder l'image téléchargée
     file.save(input_path)
-
-    # Supprimer l'arrière-plan
     with open(input_path, 'rb') as i:
         with open(output_path, 'wb') as o:
             input = i.read()
             output = remove(input)
             o.write(output)
 
-    # Renvoyer l'image sans arrière-plan
     return send_file(output_path, mimetype='image/png')
 
 if __name__ == '__main__':
-    # Utiliser le port fourni par Render ou 5000 par défaut (local)
     port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Démarrage de l'application sur le port {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
+else:
+    # Quand Gunicorn est utilisé, loguer le port
+    port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Gunicorn démarré, écoute sur 0.0.0.0:{port}")
